@@ -70,7 +70,7 @@ public class MessageService {
     }
 
     /** 
-     * TODO: ## 5: Our API should be able to retrieve a message by its ID.
+     * ## 5: Our API should be able to retrieve a message by its ID.
      * 
      * As a user, I should be able to submit a GET request on the endpoint GET localhost:8080/messages/{messageId}.
      * 
@@ -83,7 +83,10 @@ public class MessageService {
      */
     public Message getMessageById(int messageId) {
         //get message from DB
-        return messageRepository.getById(messageId);
+        if(messageRepository.existsById(messageId)){
+            return messageRepository.findById(messageId).get();
+        }
+        return null;
     }
 
     /**
@@ -134,7 +137,7 @@ public class MessageService {
             throw new ClientErrorException("Message not updated");
         }
         //update message in DB
-        Message oldMessage = messageRepository.getById(messageId);
+        Message oldMessage = messageRepository.findById(messageId).get();
         oldMessage.setMessageText(newMessage.getMessageText());
         messageRepository.save(oldMessage);
         return 1;

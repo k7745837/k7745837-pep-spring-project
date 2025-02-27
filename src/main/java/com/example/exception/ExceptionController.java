@@ -1,6 +1,5 @@
 package com.example.exception;
 
-import javax.persistence.EntityNotFoundException;
 import javax.security.sasl.AuthenticationException;
 
 import org.springframework.http.HttpStatus;
