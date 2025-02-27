@@ -109,7 +109,7 @@ public class SocialMediaController {
      * @return ResponseEntity with status code and body according to the above
      */
     @PostMapping("/messages")
-    public ResponseEntity<Message> postNewMessage(@RequestBody Message message){
+    public ResponseEntity<Message> postNewMessage(@RequestBody Message message) throws ClientErrorException {
         //Attempt to post the message
         message = messageService.addMessage(message);
         //message was successfully posted
@@ -195,7 +195,7 @@ public class SocialMediaController {
      * @return ResponseEntity with status code and body according to the above
      */
     @PatchMapping("/messages/{messageId}")
-    public ResponseEntity<Integer> patchMessageById(@PathVariable int messageId, @RequestBody Message message){
+    public ResponseEntity<Integer> patchMessageById(@PathVariable int messageId, @RequestBody Message message) throws ClientErrorException {
         //Attempt to update message
         int rows = messageService.updateMessage(messageId, message);
         //message was successfully updated
