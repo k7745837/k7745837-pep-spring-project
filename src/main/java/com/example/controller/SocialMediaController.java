@@ -2,6 +2,8 @@ package com.example.controller;
 
 import java.util.List;
 
+import javax.security.sasl.AuthenticationException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.entity.Account;
 import com.example.entity.Message;
+import com.example.exception.ClientErrorException;
+import com.example.exception.ConflictException;
 import com.example.service.AccountService;
 import com.example.service.MessageService;
 
@@ -58,19 +62,11 @@ public class SocialMediaController {
      * @return ResponseEntity with status code and body according to the above
      */
     @PostMapping("/register")
-    public ResponseEntity<Account> userRegistration(@RequestBody Account account){
+    public ResponseEntity<Account> userRegistration(@RequestBody Account account) throws ClientErrorException, ConflictException {
         //Attempt registration
         account = accountService.addNewAccount(account);
-        if (account == null){
-            //account creation failed due to duplicate username
-            return ResponseEntity.status(409).body(null);
-        }else if (account.equals(new Account())){
-            //account creation failed for other reason
-            return ResponseEntity.status(400).body(null);
-        }else{
-            //successful account creation
-            return ResponseEntity.status(200).body(account);
-        }
+        //successful account creation
+        return ResponseEntity.status(200).body(account);
     }
 
     /**
@@ -86,18 +82,14 @@ public class SocialMediaController {
      * 
      * @param account the Account object provided by the post request body
      * @return ResponseEntity with status code and body according to the above
+     * @throws AuthenticationException 
      */
     @PostMapping("/login")
-    public ResponseEntity<Account> userLogin(@RequestBody Account account){
+    public ResponseEntity<Account> userLogin(@RequestBody Account account) throws AuthenticationException {
         //Attempt login
         account = accountService.loginWithAccount(account);
-        if (account == null){
-            //login attempt failed
-            return ResponseEntity.status(401).body(null);
-        }else{
-            //successful login
-            return ResponseEntity.status(200).body(account);
-        }
+        //successful login
+        return ResponseEntity.status(200).body(account);
     }
 
     /**
@@ -120,13 +112,8 @@ public class SocialMediaController {
     public ResponseEntity<Message> postNewMessage(@RequestBody Message message){
         //Attempt to post the message
         message = messageService.addMessage(message);
-        if (message == null){
-            //message did not post to database
-            return ResponseEntity.status(400).body(null);
-        }else{
-            //message was successfully posted
-            return ResponseEntity.status(200).body(message);
-        }
+        //message was successfully posted
+        return ResponseEntity.status(200).body(message);
     }
 
     /** 
@@ -143,7 +130,7 @@ public class SocialMediaController {
     @GetMapping("/messages")
     public ResponseEntity<List<Message>> getAllMessages(){
         return ResponseEntity.status(200).body(messageService.getAllMessages());
-    }// */
+    }
 
     /** 
      * ## 5: Our API should be able to retrieve a message by its ID.
@@ -154,17 +141,13 @@ public class SocialMediaController {
      *      expected for the response body to simply be empty if there is no such message. The response status should 
      *      always be 200, which is the default.
      * 
-     * @param id the messageId provided by the endpoint GET path
+     * @param messageId the messageId provided by the endpoint GET path
      * @return ResponseEntity with status code and body according to the above
      */
-    @GetMapping("/messages/{message_id}")
-    public ResponseEntity<Message> getMessageById(@PathVariable int id){
-        Message message = messageService.getMessageById(id);
-        if (message != null){
-            return ResponseEntity.status(200).body(message);
-        }else{
-            return ResponseEntity.status(200).body(null);
-        }
+    @GetMapping("/messages/{messageId}")
+    public ResponseEntity<Message> getMessageById(@PathVariable int messageId){
+        Message message = messageService.getMessageById(messageId);
+        return ResponseEntity.status(200).body(message);
     }
 
     /**
@@ -179,15 +162,15 @@ public class SocialMediaController {
      *      because the DELETE verb is intended to be idempotent, ie, multiple calls to the DELETE endpoint should 
      *      respond with the same type of response.
      * 
-     * @param id the messageId provided by the endpoint DELETE path
+     * @param messageId the messageId provided by the endpoint DELETE path
      * @return ResponseEntity with status code and body according to the above
      */
     @DeleteMapping("/messages/{messageId}")
-    public ResponseEntity<Integer> deleteMessageById(@PathVariable int id){
-        int rows = messageService.deleteMessageById(id);
+    public ResponseEntity<Integer> deleteMessageById(@PathVariable int messageId){
+        int rows = messageService.deleteMessageById(messageId);
         if (rows == 0){
             //no message deleted
-            return ResponseEntity.status(200).body(null);
+            return ResponseEntity.status(200).build();
         }else{
             //message deleted
             return ResponseEntity.status(200).body(rows);
@@ -207,21 +190,16 @@ public class SocialMediaController {
      *      The message existing on the database should have the updated messageText.
      * - If the update of the message is not successful for any reason, the response status should be 400. (Client error)
      * 
-     * @param id the messageId provided by the endpoint PATCH path
+     * @param messageId the messageId provided by the endpoint PATCH path
      * @param message the Message object provided by the post request body
      * @return ResponseEntity with status code and body according to the above
      */
     @PatchMapping("/messages/{messageId}")
-    public ResponseEntity<Integer> patchMessageById(@PathVariable int id, @RequestBody Message message){
+    public ResponseEntity<Integer> patchMessageById(@PathVariable int messageId, @RequestBody Message message){
         //Attempt to update message
-        int rows = messageService.updateMessage(id, message);
-        if (rows == 0){
-            //message failed to update
-            return ResponseEntity.status(400).body(null);
-        }else{
-            //message was successfully updated
-            return ResponseEntity.status(200).body(rows);
-        }
+        int rows = messageService.updateMessage(messageId, message);
+        //message was successfully updated
+        return ResponseEntity.status(200).body(rows);
     }
 
     /**
@@ -233,11 +211,11 @@ public class SocialMediaController {
      *      user, which is retrieved from the database. It is expected for the list to simply be empty if there are no 
      *      messages. The response status should always be 200, which is the default.
      * 
-     * @param id the accountId provided by the endpoint GET path
+     * @param accountId the accountId provided by the endpoint GET path
      * @return ResponseEntity with status code and body according to the above
      */
     @GetMapping("/accounts/{accountId}/messages")
-    public ResponseEntity<List<Message>> getMessagesByAccountId(@PathVariable int id){
-        return ResponseEntity.status(200).body(messageService.getAllMessagesByAccountId(id));
+    public ResponseEntity<List<Message>> getMessagesByAccountId(@PathVariable int accountId){
+        return ResponseEntity.status(200).body(messageService.getAllMessagesByAccountId(accountId));
     }
 }
